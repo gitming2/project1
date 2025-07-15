@@ -74,7 +74,7 @@ def solar_api_news(data_limit: int = 10):
           collection.add(
                   documents=[summary_answer], # 저장할 텍스트 내용
                   embeddings=[summary_embedding], # 텍스트의 임베딩 벡터
-                  metadatas=[{"date": date, "title": title, "category": category, doc_index": i, "type": "summary"}], # 추가 정보(메타데이터)
+                  metadatas=[{"date": date, "title": title, "category": category, "doc_index": i, "type": "summary"}], # 추가 정보(메타데이터)
                   ids=[doc_id] # 고유 ID
               )
         except Exception as e:
