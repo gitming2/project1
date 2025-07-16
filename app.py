@@ -7,7 +7,6 @@ import os
 from sentence_transformers import SentenceTransformer
 from collections import Counter
 import pandas as pd
-from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
 # 환경변수 불러오기
@@ -22,12 +21,6 @@ try:
 except ValueError as e:
   st.warning("SOLAR_API_KEY 환경변수가 없습니다.")
 
-# 데이터셋 불러오기
-try:
-  dataset = load_dataset("daekeun-ml/naver-news-summarization-ko", split="train")
-except Exception as e:
-    st.warning(f"dataset 오류:{e}")
-
 try:
   client = chromadb.PersistentClient() # 크로마 저장 공간(폴더에 저장) -> 나중에도 불러올 수 있음
   # 컬렉션은 임베딩, 문서 및 추가 메타데이터를 저장하는 곳, 이름을 지정하여 컬렉션을 만들 수 있음
@@ -38,7 +31,13 @@ except Exception as e:
 embedding_model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
 
 def solar_api_news(data_limit: int = 50):
-  # 가져올 문서 10개
+  # 데이터셋 불러오기
+  try:
+    dataset = load_dataset("daekeun-ml/naver-news-summarization-ko", split="train")
+  except Exception as e:
+      st.warning(f"dataset 오류:{e}")
+  
+  # 가져올 문서 50개
   for i in range(data_limit):
         doc = dataset['document'][i] # 기사 본문
         title = dataset['title'][i]
@@ -55,7 +54,7 @@ def solar_api_news(data_limit: int = 50):
                   "content": "너는 뉴스 기사를 요약하는 유용한 친구야. 중학생도 이해할 수 있게 한두 줄로 잘 요약하지. 그리고 넌 무조건 반말을 쓰고, 이모지를 가끔 사용해."
                 },
                 {
-                  "role": "user", "content": f"이 기사를 요약해줘{doc}"
+                  "role": "user", "content": f"이 기사를 요약해줘 {doc}"
                 }
               ],
               stream=True,
@@ -121,15 +120,22 @@ def solar_api_news(data_limit: int = 50):
 # --------------------------streamlit-------------------------------
 
 st.title("📰기사 요약")
+st.divider() # 구분선
 
-# 날짜별 뉴스 정리
+# 날짜별 뉴스 모아보기
 def display_news_by_date():
     st.header("📅 날짜별 뉴스 모아보기")
-    # collection에 summary 데이터를 metadatas까지 포함해서 변수에 저장
-    all_summary_data = collection.get(where={"type": "summary"}, include=["metadatas"])
+    # collection에 summary 데이터를 documents, metadatas까지 포함해서 변수에 저장
+    all_summary_data = collection.get(where={"type": "summary"}, include=["documents", "metadatas"])
+    all_keyword_data = collection.get(where={"type":"keyword"}, include=["documents"])
+    
+    # 데이터 없으면 함수 탈출
+    if not (all_summary_data["metadatas"] or all_keyword_data["metadatas"]):
+        st.warning("분석할 데이터가 없습니다. 먼저 데이터 처리를 실행해주세요.")
+        return
 
-    # metadatas에 있는 date들 다 불러와서(리스트컴프리헨션) 중복 제거(set), 다시 list로 만들고(list) 최신순으로 정렬(sorted)
-    dates = sorted(list(set(metadata['date'] for metadata in all_summary_data['metadatas']))) # metadata는 딕셔너리 # 집합에서 다시 리스트로(index 때문)
+    # metadatas에 있는 date들 다 불러와서(리스트컴프리헨션) 중복 제거(set), 다시 list로 만들고(list) 최신순으로 정렬(sorted) # [:10]은 앞에 10글자만 가져온다는 뜻
+    dates = sorted(list(set(metadata['date'][:10] for metadata in all_summary_data['metadatas']))) # metadata는 딕셔너리 # 집합에서 다시 리스트로(index 때문)
     # 날짜 선택칸
     selected_date = st.selectbox("조회할 날짜를 선택하세요.", options=dates)
 
@@ -137,28 +143,35 @@ def display_news_by_date():
     if selected_date:
         st.divider() # 구분선
         st.subheader(f"[{selected_date}] 뉴스 목록")
-        # collection에서 가져오는데, summary이면서 selected_date에 포함되는 것만 가져옴($and 연산자)
-        news_of_day = collection.get(where={"$and": [{"type": "summary"}, {"date": selected_date}]})
         
-        # 선택된 날의 요약뉴스들의 ID 개수만큼 순서대로 반복
-        for i in range(len(news_of_day['ids'])):
-            # i번째에 있는 데이터의 제목을 가져와서 목록으로 표시
-            st.markdown(f"**- {news_of_day['metadatas'][i]['title']}**")
-            # i번째에 있는 카테고리 캡션으로 보여줌
-            st.caption(f"카테고리: {news_of_day['metadatas'][i]['category']}")
-            # i번째에 있는 요약뉴스를 파란 박스 안에 보여줌
-            st.info(news_of_day['documents'][i])
+        # 요약뉴스들의 ID 개수만큼 순서대로 반복
+        for i in range(len(all_summary_data["ids"])):
+          # 전체 요약 데이터의 metadatas에 있는 date를 i 순서대로 가져오는데, date가 selected_date로 시작하면
+          if all_summary_data["metadatas"][i]["date"].startswith(selected_date):
+            # 네모 칸 안에 넣음
+            with st.container(border=True):
+              # i번째에 있는 데이터의 제목을 가져옴 # markdown = 구문요소 지원(예: 헤더, 볼드, 이탤릭 등)
+              st.markdown(f'**• {all_summary_data["metadatas"][i]["title"]}**')
+              # i번째에 있는 카테고리 캡션으로 보여줌
+              st.caption(f'카테고리: {all_summary_data["metadatas"][i]["category"]} | 키워드: {all_keyword_data["documents"][i]}')
+              # i번째에 있는 요약뉴스를 파란 박스 안에 보여줌
+              st.info(all_summary_data["documents"][i])
 
 # 타임라인별 뉴스 정리
 def display_timeline_by_topic():
     st.header("🕓 주제별 뉴스 타임라인")
     # collection에 summary 데이터를 metadatas까지 포함해서 변수에 저장
     all_summary_data = collection.get(where={"type": "summary"}, include=["metadatas"])
+    
+    # 데이터 없으면 함수 탈출
+    if not all_summary_data["metadatas"]:
+        st.warning("분석할 데이터가 없습니다. 먼저 데이터 처리를 실행해주세요.")
+        return
 
     # metadatas에 있는 date들 다 불러와서(리스트컴프리헨션) 중복 제거(set), 다시 list로 만들고(list) 최신순으로 정렬(sorted)
     categories = sorted(list(set(metadata['category'] for metadata in all_summary_data['metadatas'])))
     # 카테고리 정하는 칸
-    selected_category = st.selectbox("타임라인을 볼 주제(카테고리)를 선택하세요.", options=categories)
+    selected_category = st.selectbox("타임라인을 볼 주제를 선택하세요.", options=categories)
 
     # 선택 됐다면,
     if selected_category:
@@ -175,12 +188,25 @@ def display_timeline_by_topic():
             'summary': category_news['documents']
         }).sort_values('date', ascending=False) # date 기준으로 내림차순으로 정렬
         
-        st.dataframe(df)
+        
+        # iterrows로 각 행을 반복 # _(index)는 필요 없어서 비워둠
+        for _, row in df.iterrows():
+            with st.container(border=True):
+                st.markdown(f"**{row['title']}**")
+                st.caption(row['date'])
+                st.write(row['summary'])
+                    
+        # st.dataframe(df)
 
 # 가장 인기있는 주제
 def display_most_common_category():
   st.header("📊 가장 인기있는 주제")
   all_summary_data = collection.get(where={"type": "summary"}, include=["metadatas"])
+  
+  # 데이터 없으면 함수 탈출
+  if not all_summary_data["metadatas"]:
+      st.warning("분석할 데이터가 없습니다. 먼저 데이터 처리를 실행해주세요.")
+      return
   
   # 중복 제거한 카테고리 리스트
   set_categories = list(set(metadata["category"] for metadata in all_summary_data["metadatas"]))
@@ -243,8 +269,3 @@ elif menu == "🕓 주제별 뉴스 타임라인":
     display_timeline_by_topic()
 elif menu == "📊 가장 인기있는 주제":
     display_most_common_category()
-    
-if collection.count() == 0: # collection에 데이터가 없으면
-    solar_api_news()
-else:
-    print("저장된 데이터가 이미 있습니다.")
