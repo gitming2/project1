@@ -114,7 +114,7 @@ def solar_api_news(data_limit: int = 50):
 # --------------------------streamlit-------------------------------
 # streamlit 사이트 기본 설정
 st.set_page_config(
-         page_title="뉴스 요약해드립니다!",
+         page_title="뉴스를 더 쉽게",
          page_icon="📰",
          layout="centered", # 화면 가운데 쪽만 씀
          initial_sidebar_state="auto", # 작은 기기에선 사이드바 숨김
