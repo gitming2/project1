@@ -1,3 +1,8 @@
+# streamlit 배포
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 import streamlit as st
 from datasets import load_dataset
 import chromadb
@@ -8,11 +13,6 @@ from collections import Counter
 import pandas as pd
 import matplotlib.pyplot as plt
 from chromadb.utils import embedding_functions
-
-# streamlit 배포
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 # # 환경변수 불러오기
 try:
