@@ -2,9 +2,8 @@ import streamlit as st
 from datasets import load_dataset
 import chromadb
 from openai import OpenAI
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import os
-from sentence_transformers import SentenceTransformer
 from collections import Counter
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -17,12 +16,11 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 # # 환경변수 불러오기
 try:
-#   load_dotenv() 
-#   api_key = os.getenv("SOLAR_API_KEY")
+  # load_dotenv() 
+  # api_key = os.getenv("SOLAR_API_KEY")
   
   # 해당 코드는 streamlit secrets 사용 시 활성화
-  api_key = os.environ["SOLAR_API_KEY"] = st.secrets
-  #["SOLAR_API_KEY"]
+  api_key = os.environ["SOLAR_API_KEY"] = st.secrets["SOLAR_API_KEY"]
 
   OpenAI_client = OpenAI(
       api_key=api_key,

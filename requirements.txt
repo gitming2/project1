@@ -1,12 +1,7 @@
 datasets==4.0.0
 httptools==0.6.4
-langchain-chroma==0.2.4
-langchain-community==0.3.27
-langchain-redis==0.2.3
-langchain-upstage==0.6.0
 pip==24.0
 pysqlite3-binary==0.5.4
-sentence-transformers==5.0.0
 streamlit==1.47.0
 uvloop==0.21.0
 watchfiles==1.1.0
