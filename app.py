@@ -30,7 +30,12 @@ except ValueError as e:
   st.warning("SOLAR_API_KEY 환경변수가 없습니다.")
 
 try:
-  client = chromadb.PersistentClient() # 크로마 저장 공간(폴더에 저장) -> 나중에도 불러올 수 있음
+  # 현재 app.py 파일이 있는 디렉토리의 절대 경로를 가져옵니다.
+  script_path = os.path.dirname(os.path.abspath(__file__))
+  # 데이터베이스 폴더의 절대 경로를 만듭니다.
+  db_path = os.path.join(script_path, "chroma")
+  
+  client = chromadb.PersistentClient(path=db_path) # 크로마 저장 공간(폴더에 저장) -> 나중에도 불러올 수 있음
   # 컬렉션은 임베딩, 문서 및 추가 메타데이터를 저장하는 곳, 이름을 지정하여 컬렉션을 만들 수 있음
   embedding_func = embedding_functions.DefaultEmbeddingFunction()
   collection = client.get_or_create_collection(name="news_summary", embedding_function=embedding_func) # 클라이언트 이미 있으면 불러오기, 없으면 만들기
