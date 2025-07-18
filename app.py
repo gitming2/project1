@@ -10,10 +10,19 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from chromadb.utils import embedding_functions
 
-# 환경변수 불러오기
+# streamlit 배포
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
+# # 환경변수 불러오기
 try:
-  load_dotenv() 
-  api_key = os.getenv("SOLAR_API_KEY")
+#   load_dotenv() 
+#   api_key = os.getenv("SOLAR_API_KEY")
+  
+  # 해당 코드는 streamlit secrets 사용 시 활성화
+  api_key = os.environ["SOLAR_API_KEY"] = st.secrets
+  #["SOLAR_API_KEY"]
 
   OpenAI_client = OpenAI(
       api_key=api_key,
