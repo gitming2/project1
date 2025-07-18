@@ -5,10 +5,10 @@ langchain-community==0.3.27
 langchain-redis==0.2.3
 langchain-upstage==0.6.0
 pip==24.0
+pysqlite3-binary==0.5.4
 sentence-transformers==5.0.0
 streamlit==1.47.0
 uvloop==0.21.0
 watchfiles==1.1.0
 websockets==15.0.1
 wordcloud==1.9.4
-pysqlite3-binary
