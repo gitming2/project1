@@ -11,4 +11,4 @@ uvloop==0.21.0
 watchfiles==1.1.0
 websockets==15.0.1
 wordcloud==1.9.4
-sqlite3 >= 3.35.0
+sqlite3 = 3.35.0
